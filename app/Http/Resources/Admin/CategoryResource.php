@@ -4,8 +4,9 @@ namespace App\Http\Resources\Admin;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Admin\ProductResource;
 
-class ProductsResource extends JsonResource
+class CategoryResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -17,12 +18,9 @@ class ProductsResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
-            'description' => $this->description,
-            'price' => $this->price,
-            'images' => $this->images,
+            'image' => $this->image ? asset('storage/' . $this->image) : null,
             'is_active' => $this->is_active,
-            'categories' => $this->whenLoaded('categories', fn()=> $this->categories->pluck('name')),
-            'created_at' => $this->created_at,
+            'products' => ProductResource::collection($this->whenLoaded('products')),
         ];
     }
 }

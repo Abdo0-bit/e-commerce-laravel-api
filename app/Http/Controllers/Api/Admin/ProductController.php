@@ -7,8 +7,8 @@ use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Product;
 use Illuminate\Http\Request;
-use App\Http\Resources\Admin\ProductsResource;
-use App\Services\Contracts\ProductServiceInterface;
+use App\Http\Resources\Admin\ProductResource;
+use App\Services\Contracts\Admin\ProductServiceInterface;
 
 class ProductController extends Controller
 {
@@ -22,7 +22,7 @@ class ProductController extends Controller
     public function index()
     {
         $products = Product::with('categories:name')->paginate(10);
-        return ProductsResource::collection($products);
+        return ProductResource::collection($products);
     }
 
     /**
@@ -31,7 +31,7 @@ class ProductController extends Controller
     public function store(StoreProductRequest $request)
     {
         $product = $this->productService->store($request->validated());
-        return new ProductsResource($product);
+        return new ProductResource($product);
     }
 
     /**
@@ -40,7 +40,7 @@ class ProductController extends Controller
     public function show(Product $product)
     {
         $product->load('categories:id,name');
-        return new ProductsResource($product);
+        return new ProductResource($product);
     }
 
     /**
@@ -49,7 +49,7 @@ class ProductController extends Controller
     public function update(UpdateProductRequest $request , Product $product)
     {
         $product = $this->productService->update($product, $request->validated());
-        return new ProductsResource($product);
+        return new ProductResource($product);
     }
 
     /**

@@ -1,8 +1,8 @@
 <?php
 
-namespace App\Services;
+namespace App\Services\Admin;
 use App\Models\Product;
-use App\Services\Contracts\ProductServiceInterface;
+use App\Services\Contracts\Admin\ProductServiceInterface;
 
 class ProductService implements ProductServiceInterface
 {
