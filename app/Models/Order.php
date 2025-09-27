@@ -24,6 +24,7 @@ class Order extends Model
         'total_amount',
     ];
 
+
     public function user()
     {
         return $this->belongsTo(User::class);
@@ -33,6 +34,7 @@ class Order extends Model
     {
         return $this->hasMany(OrderItem::class);
     }
+
 
 
 }
