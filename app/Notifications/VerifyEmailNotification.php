@@ -3,9 +3,9 @@
 namespace App\Notifications;
 
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 
 class VerifyEmailNotification extends Notification
 {
@@ -34,10 +34,32 @@ class VerifyEmailNotification extends Notification
      */
     public function toMail(object $notifiable): MailMessage
     {
+        $verificationUrl = $this->verificationUrl($notifiable);
+
         return (new MailMessage)
-            ->line('The introduction to the notification.')
-            ->action('Notification Action', url('/'))
-            ->line('Thank you for using our application!');
+            ->subject('Verify Your Email Address')
+            ->greeting('Welcome to '.config('app.name').'!')
+            ->line('Thank you for registering with us! To complete your registration, please verify your email address.')
+            ->line('Click the button below to verify your email address:')
+            ->action('Verify Email Address', $verificationUrl)
+            ->line('This verification link will expire in 60 minutes.')
+            ->line('If you did not create an account, no further action is required.')
+            ->line('Thank you for joining us!');
+    }
+
+    /**
+     * Get the verification URL for the given notifiable.
+     */
+    protected function verificationUrl(object $notifiable): string
+    {
+        return URL::temporarySignedRoute(
+            'verification.verify',
+            now()->addMinutes(60),
+            [
+                'id' => $notifiable->getKey(),
+                'hash' => sha1($notifiable->getEmailForVerification()),
+            ]
+        );
     }
 
     /**
@@ -48,7 +70,10 @@ class VerifyEmailNotification extends Notification
     public function toArray(object $notifiable): array
     {
         return [
-            //
+            'user_id' => $notifiable->id,
+            'email' => $notifiable->email,
+            'message' => 'Please verify your email address to complete registration',
+            'expires_at' => now()->addMinutes(60)->toISOString(),
         ];
     }
 }
