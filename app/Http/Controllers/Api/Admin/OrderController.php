@@ -9,6 +9,7 @@ use App\Models\Order;
 use Illuminate\Http\Request;
 use App\Http\Resources\Admin\OrderResource;
 use App\Http\Resources\Admin\OrderSummaryResource;
+use App\Events\OrderStatusUpdated;
 
 class OrderController extends Controller
 {
@@ -36,6 +37,7 @@ class OrderController extends Controller
     public function update(UpdateOrderRequest $request, Order $order)
     {
         $data = $request->validated();
+        $oldStatus = $order->status;
 
         if(isset($data['status']) && $data['status'] === 'delivered'){
             $data['payment_status'] = 'paid';
@@ -45,7 +47,13 @@ class OrderController extends Controller
             $days = config('orders.delete_after_days'); 
             DeleteOrderJob::dispatch($order)->delay(now()->addDays($days));
         }
+        
         $order->update($data);
+
+        // Broadcast order status update if status changed
+        if (isset($data['status']) && $oldStatus !== $data['status']) {
+            broadcast(new OrderStatusUpdated($order, $oldStatus));
+        }
 
         return response()->json([
             'message' => 'Order updated successfully',

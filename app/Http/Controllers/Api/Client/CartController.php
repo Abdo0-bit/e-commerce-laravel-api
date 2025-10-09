@@ -9,6 +9,8 @@ use App\Http\Resources\Cart\CartResource;
 use App\Http\Requests\AddToCartRequest;
 use App\Http\Requests\UpdateCartRequest;
 use App\Models\Product;
+use App\Events\CartUpdated;
+use Illuminate\Support\Facades\Auth;
 
 class CartController extends Controller
 {
@@ -36,11 +38,15 @@ class CartController extends Controller
     {
         $product = Product::findOrFail($request->product_id);
         $this->cartService->add($product, $request->quantity ?? 1);
+        $cart = $this->cartService->getCart();
+
+        // Broadcast cart update
+        $this->broadcastCartUpdate($cart);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Product added to cart successfully.',
-            'data' => new CartResource($this->cartService->getCart()),
+            'data' => new CartResource($cart),
         ]);
     }
 
@@ -50,11 +56,15 @@ class CartController extends Controller
     public function update(UpdateCartRequest $request, Product $product)
     {
         $this->cartService->update($product, $request->quantity);
+        $cart = $this->cartService->getCart();
+
+        // Broadcast cart update
+        $this->broadcastCartUpdate($cart);
         
         return response()->json([
             'status' => 'success',
             'message' => 'Cart updated successfully.',
-            'data' => new CartResource($this->cartService->getCart()),
+            'data' => new CartResource($cart),
         ]);
     }
 
@@ -64,11 +74,15 @@ class CartController extends Controller
     public function destroy(Product $product)
     {
         $this->cartService->remove($product);
+        $cart = $this->cartService->getCart();
+
+        // Broadcast cart update
+        $this->broadcastCartUpdate($cart);
         
         return response()->json([
             'status' => 'success',
             'message' => 'Product removed from cart successfully.',
-            'data' => new CartResource($this->cartService->getCart()),
+            'data' => new CartResource($cart),
         ]);
     }
 
@@ -78,11 +92,25 @@ class CartController extends Controller
     public function clear()
     {
         $this->cartService->clear();
+        $cart = $this->cartService->getCart();
+
+        // Broadcast cart update
+        $this->broadcastCartUpdate($cart);
 
         return response()->json([
             'status' => 'success',
             'message' => 'Cart cleared successfully.'
         ]);
     }
-    
+
+    /**
+     * Broadcast cart updates to real-time listeners
+     */
+    private function broadcastCartUpdate(array $cart): void
+    {
+        $cartId = session()->getId();
+        $userId = Auth::id();
+
+        broadcast(new CartUpdated($cartId, $cart, $userId));
+    }
 }

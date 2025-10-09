@@ -78,6 +78,7 @@ class CartService implements CartServiceInterface
 
     public function clear(): void
     {
+        $lockKey = "lock:{$this->key}";
         try {
             Redis::del($this->key);
         } catch (\Exception $e) {
