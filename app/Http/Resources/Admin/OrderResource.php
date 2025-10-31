@@ -3,8 +3,6 @@
 namespace App\Http\Resources\Admin;
 
 use App\Http\Resources\UserResource;
-use App\Models\Order;
-use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -31,6 +29,9 @@ class OrderResource extends JsonResource
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
             'total_amount' => $this->total_amount,
+            'stripe_payment_intent_id' => $this->stripe_payment_intent_id,
+            'stripe_client_secret' => $this->when($this->payment_method === 'stripe', $this->stripe_client_secret),
+            'stripe_payment_metadata' => $this->when($this->payment_method === 'stripe', $this->stripe_payment_metadata),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'order_items' => OrderItemResource::collection($this->whenLoaded('orderItems')),

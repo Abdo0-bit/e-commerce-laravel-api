@@ -20,6 +20,7 @@ class OrderResource extends JsonResource
             'payment_status' => $this->payment_status,
             'payment_method' => $this->payment_method,
             'total_amount' => $this->total_amount,
+            'stripe_client_secret' => $this->when($this->payment_method === 'stripe', $this->stripe_client_secret),
             'created_at' => $this->created_at->format('Y-m-d H:i:s'),
 
             'shipping' => [
@@ -42,7 +43,7 @@ class OrderResource extends JsonResource
                         'total' => $item->total,
                     ];
                 });
-            })
+            }),
         ];
     }
 }

@@ -12,6 +12,7 @@
         "php": "^8.2",
         "andreaselia/laravel-api-to-postman": "^2.1",
         "darkaonline/l5-swagger": "^9.0",
+        "laravel/cashier": "^16.0",
         "laravel/framework": "^12.0",
         "laravel/reverb": "^1.6",
         "laravel/sanctum": "^4.0",

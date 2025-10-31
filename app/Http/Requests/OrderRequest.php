@@ -29,7 +29,7 @@ class OrderRequest extends FormRequest
             'shipping_city' => 'required|string|max:100',
             'shipping_state' => 'nullable|string|max:100',
             'shipping_postal_code' => 'nullable|string|max:20',
-            'payment_method' => 'nullable|in:cod',
+            'payment_method' => 'nullable|in:cod,stripe',
         ];
     }
 }
