@@ -222,6 +222,7 @@ PATCH  /api/client/orders/{id}/cancel # Cancel order
 ```
 
 **Order Creation with Payment Methods:**
+
 ```json
 POST /api/client/orders
 {
@@ -237,15 +238,16 @@ POST /api/client/orders
 ```
 
 **Stripe Response Example:**
+
 ```json
 {
-  "data": {
-    "id": 22,
-    "payment_method": "stripe",
-    "payment_status": "unpaid",
-    "stripe_client_secret": "pi_3SOMF4EFDrXcJGWZ1...",
-    "total_amount": "49.99"
-  }
+    "data": {
+        "id": 22,
+        "payment_method": "stripe",
+        "payment_status": "unpaid",
+        "stripe_client_secret": "pi_3SOMF4EFDrXcJGWZ1...",
+        "total_amount": "49.99"
+    }
 }
 ```
 
@@ -267,11 +269,13 @@ POST   /api/stripe/webhook       # Stripe webhook endpoint (no auth required)
 ```
 
 **Handled Webhook Events:**
-- `payment_intent.succeeded` - Updates order to paid status
-- `payment_intent.payment_failed` - Updates order to failed status  
-- `payment_intent.requires_action` - Updates order to requires_action status
+
+-   `payment_intent.succeeded` - Updates order to paid status
+-   `payment_intent.payment_failed` - Updates order to failed status
+-   `payment_intent.requires_action` - Updates order to requires_action status
 
 **Webhook Configuration:**
+
 1. Set up webhook endpoint in Stripe Dashboard: `https://your-domain.com/api/stripe/webhook`
 2. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.requires_action`
 3. Copy webhook secret to `STRIPE_WEBHOOK_SECRET` in `.env`
@@ -423,28 +427,31 @@ When creating an order with `payment_method: "stripe"`, you'll receive a `stripe
 #### 2. Create Payment Form
 
 ```javascript
-const stripe = Stripe('pk_test_your_stripe_publishable_key');
+const stripe = Stripe("pk_test_your_stripe_publishable_key");
 const elements = stripe.elements();
-const cardElement = elements.create('card');
-cardElement.mount('#card-element');
+const cardElement = elements.create("card");
+cardElement.mount("#card-element");
 
 // When order is created with payment_method: "stripe"
 async function handlePayment(clientSecret) {
-    const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-            card: cardElement,
-            billing_details: {
-                name: 'Customer Name',
-                email: 'customer@example.com',
+    const { error, paymentIntent } = await stripe.confirmCardPayment(
+        clientSecret,
+        {
+            payment_method: {
+                card: cardElement,
+                billing_details: {
+                    name: "Customer Name",
+                    email: "customer@example.com",
+                },
             },
         }
-    });
+    );
 
     if (error) {
-        console.error('Payment failed:', error);
+        console.error("Payment failed:", error);
         // Handle payment error
-    } else if (paymentIntent.status === 'succeeded') {
-        console.log('Payment succeeded!');
+    } else if (paymentIntent.status === "succeeded") {
+        console.log("Payment succeeded!");
         // Redirect to success page
         // The webhook will automatically update the order status
     }
@@ -477,9 +484,9 @@ Order Fulfillment
 
 ```javascript
 // Test card numbers for different scenarios:
-'4242424242424242' // Visa - Succeeds
-'4000000000000002' // Visa - Declined  
-'4000000000003220' // Visa - 3D Secure required
+"4242424242424242"; // Visa - Succeeds
+"4000000000000002"; // Visa - Declined
+"4000000000003220"; // Visa - 3D Secure required
 ```
 
 ## 📊 Performance Features

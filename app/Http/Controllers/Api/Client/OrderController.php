@@ -21,7 +21,33 @@ class OrderController extends Controller
     ) {}
 
     /**
-     * Display a listing of the resource.
+     * @OA\Get(
+     *     path="/client/orders",
+     *     operationId="getUserOrders",
+     *     tags={"Client - Orders"},
+     *     summary="Get user's orders",
+     *     description="Retrieves all orders for the authenticated user, including payment status and Stripe payment information when applicable",
+     *     security={{"sanctum": {}}},
+     *     @OA\Response(
+     *         response=200,
+     *         description="List of user orders",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 type="array",
+     *                 @OA\Items(ref="#/components/schemas/Order")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     )
+     * )
      */
     public function index()
     {
@@ -34,7 +60,118 @@ class OrderController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * @OA\Post(
+     *     path="/client/orders",
+     *     operationId="createOrder",
+     *     tags={"Client - Orders", "Payments"},
+     *     summary="Create a new order with payment processing",
+     *     description="Creates a new order from the current user's cart. Supports both COD and Stripe payment methods. For Stripe payments, returns a client_secret for frontend payment confirmation.",
+     *     security={{"sanctum": {}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         description="Order details and payment information",
+     *         @OA\JsonContent(
+     *             required={"first_name", "last_name", "shipping_phone", "shipping_street", "shipping_city", "shipping_state", "shipping_postal_code", "payment_method"},
+     *             @OA\Property(property="first_name", type="string", example="John", description="Customer first name"),
+     *             @OA\Property(property="last_name", type="string", example="Doe", description="Customer last name"),
+     *             @OA\Property(property="shipping_phone", type="string", example="123-456-7890", description="Shipping phone number"),
+     *             @OA\Property(property="shipping_street", type="string", example="123 Main St", description="Shipping street address"),
+     *             @OA\Property(property="shipping_city", type="string", example="Anytown", description="Shipping city"),
+     *             @OA\Property(property="shipping_state", type="string", example="CA", description="Shipping state"),
+     *             @OA\Property(property="shipping_postal_code", type="string", example="12345", description="Shipping postal code"),
+     *             @OA\Property(
+     *                 property="payment_method", 
+     *                 type="string", 
+     *                 enum={"cod", "stripe"}, 
+     *                 example="stripe", 
+     *                 description="Payment method: 'cod' for Cash on Delivery, 'stripe' for credit/debit card payments"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=201,
+     *         description="Order created successfully",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Order created successfully."),
+     *             @OA\Property(property="status", type="string", example="success"),
+     *             @OA\Property(
+     *                 property="data",
+     *                 ref="#/components/schemas/Order"
+     *             ),
+     *             @OA\Examples(
+     *                 example="stripe_order",
+     *                 summary="Stripe Payment Order",
+     *                 value={
+     *                     "message": "Order created successfully.",
+     *                     "status": "success",
+     *                     "data": {
+     *                         "id": 22,
+     *                         "payment_method": "stripe",
+     *                         "payment_status": "unpaid",
+     *                         "stripe_client_secret": "pi_3SOMF4EFDrXcJGWZ18qFfsrp_secret_xxx",
+     *                         "total_amount": "49.99",
+     *                         "status": "pending"
+     *                     }
+     *                 }
+     *             ),
+     *             @OA\Examples(
+     *                 example="cod_order",
+     *                 summary="Cash on Delivery Order",
+     *                 value={
+     *                     "message": "Order created successfully.",
+     *                     "status": "success",
+     *                     "data": {
+     *                         "id": 23,
+     *                         "payment_method": "cod",
+     *                         "payment_status": "unpaid",
+     *                         "stripe_client_secret": null,
+     *                         "total_amount": "29.99",
+     *                         "status": "pending"
+     *                     }
+     *                 }
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request - Cart is empty or invalid data",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Cart is empty"),
+     *             @OA\Property(property="status", type="string", example="error")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Unauthenticated.")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation errors",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="The given data was invalid."),
+     *             @OA\Property(
+     *                 property="errors",
+     *                 type="object",
+     *                 @OA\Property(
+     *                     property="payment_method",
+     *                     type="array",
+     *                     @OA\Items(type="string", example="The selected payment method is invalid.")
+     *                 )
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Payment processing error",
+     *         @OA\JsonContent(
+     *             @OA\Property(property="message", type="string", example="Payment processing failed"),
+     *             @OA\Property(property="status", type="string", example="error")
+     *         )
+     *     )
+     * )
      */
     public function store(OrderRequest $request)
     {

@@ -53,7 +53,7 @@ namespace App\Http\Resources;
  *     schema="Order",
  *     type="object",
  *     title="Order",
- *     description="Order model",
+ *     description="Order model with Stripe payment integration",
  *
  *     @OA\Property(property="id", type="integer", example=1),
  *     @OA\Property(property="user_id", type="integer", example=1),
@@ -65,9 +65,12 @@ namespace App\Http\Resources;
  *     @OA\Property(property="shipping_state", type="string", example="NY"),
  *     @OA\Property(property="shipping_postal_code", type="string", example="10001"),
  *     @OA\Property(property="status", type="string", enum={"pending", "processing", "shipped", "delivered", "cancelled"}, example="pending"),
- *     @OA\Property(property="payment_status", type="string", enum={"pending", "paid", "failed"}, example="pending"),
+ *     @OA\Property(property="payment_status", type="string", enum={"unpaid", "paid", "failed", "requires_action", "processing"}, example="unpaid"),
  *     @OA\Property(property="payment_method", type="string", enum={"cod", "stripe"}, example="stripe"),
  *     @OA\Property(property="total_amount", type="number", format="float", example=199.99),
+ *     @OA\Property(property="stripe_payment_intent_id", type="string", nullable=true, example="pi_3SOMF4EFDrXcJGWZ18qFfsrp", description="Stripe payment intent ID"),
+ *     @OA\Property(property="stripe_client_secret", type="string", nullable=true, example="pi_3SOMF4EFDrXcJGWZ18qFfsrp_secret_xxx", description="Stripe client secret for frontend confirmation"),
+ *     @OA\Property(property="stripe_payment_metadata", type="object", nullable=true, example={"order_id": 123, "customer_email": "john@example.com"}, description="Stripe payment metadata"),
  *     @OA\Property(property="created_at", type="string", format="date-time"),
  *     @OA\Property(property="updated_at", type="string", format="date-time")
  * )
