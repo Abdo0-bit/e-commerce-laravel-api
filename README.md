@@ -388,14 +388,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 **Abdulrahman** - [GitHub Profile](https://github.com/Abdo0-bit)
 
-## 🙏 Acknowledgments
-
--   Laravel Framework and community
--   Laravel Reverb for WebSocket functionality
--   Swagger/OpenAPI for documentation
--   Redis for caching and broadcasting
--   All contributors and testers
-
 ---
 
 ⭐ **Star this repository if you found it helpful!**
