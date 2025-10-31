@@ -1,9 +1,10 @@
-# 🛍️ E-Commerce API - Real-Time Laravel Application
+# 🛍️ E-Commerce API - Real-Time Laravel Application with Stripe Payments
 
-A modern, production-ready e-commerce API built with Laravel 12, featuring real-time WebSocket functionality, comprehensive authentication, and interactive API documentation.
+A modern, production-ready e-commerce API built with Laravel 12, featuring Stripe payment integration, real-time WebSocket functionality, comprehensive authentication, and interactive API documentation.
 
 ![Laravel](https://img.shields.io/badge/Laravel-12.x-red?style=flat-square&logo=laravel)
 ![PHP](https://img.shields.io/badge/PHP-8.4-blue?style=flat-square&logo=php)
+![Stripe](https://img.shields.io/badge/Stripe-Payment-blueviolet?style=flat-square&logo=stripe)
 ![WebSocket](https://img.shields.io/badge/WebSocket-Laravel%20Reverb-green?style=flat-square)
 ![API Docs](https://img.shields.io/badge/API%20Docs-Swagger-orange?style=flat-square)
 ![Real-time](https://img.shields.io/badge/Real--time-Broadcasting-purple?style=flat-square)
@@ -25,6 +26,16 @@ A modern, production-ready e-commerce API built with Laravel 12, featuring real-
 -   Order management system
 -   Inventory tracking
 -   Order status management
+
+### 💳 **Payment Integration**
+
+-   **Stripe Payment Processing** with Laravel Cashier
+-   **Multiple Payment Methods**: Cash on Delivery (COD) & Credit/Debit Cards
+-   **Secure Payment Intents** with client-side confirmation
+-   **Automatic Payment Status Updates** via webhooks
+-   **Real-time Payment Processing** with immediate status feedback
+-   **Failed Payment Handling** with proper error reporting
+-   **3D Secure Support** for enhanced security
 
 ### ⚡ **Real-Time Features**
 
@@ -54,6 +65,7 @@ A modern, production-ready e-commerce API built with Laravel 12, featuring real-
 
 -   **Backend:** Laravel 12.30.1, PHP 8.4.13
 -   **Database:** MySQL with Redis caching
+-   **Payments:** Stripe API with Laravel Cashier 16.0.3
 -   **Real-time:** Laravel Reverb 1.6.0 (WebSocket)
 -   **Authentication:** Laravel Sanctum 4.2.0
 -   **Documentation:** L5-Swagger (OpenAPI/Swagger UI)
@@ -132,6 +144,11 @@ MAIL_HOST=127.0.0.1
 MAIL_PORT=2525
 MAIL_FROM_ADDRESS="hello@example.com"
 MAIL_FROM_NAME="${APP_NAME}"
+
+# Stripe Payment Configuration
+STRIPE_KEY=pk_test_your_stripe_publishable_key
+STRIPE_SECRET=sk_test_your_stripe_secret_key
+STRIPE_WEBHOOK_SECRET=whsec_your_webhook_secret
 ```
 
 5. **Database setup**
@@ -204,6 +221,34 @@ GET    /api/client/orders/{id}   # Get single order
 PATCH  /api/client/orders/{id}/cancel # Cancel order
 ```
 
+**Order Creation with Payment Methods:**
+```json
+POST /api/client/orders
+{
+  "first_name": "John",
+  "last_name": "Doe",
+  "shipping_phone": "123-456-7890",
+  "shipping_street": "123 Main St",
+  "shipping_city": "Anytown",
+  "shipping_state": "CA",
+  "shipping_postal_code": "12345",
+  "payment_method": "stripe"  // "stripe" or "cod"
+}
+```
+
+**Stripe Response Example:**
+```json
+{
+  "data": {
+    "id": 22,
+    "payment_method": "stripe",
+    "payment_status": "unpaid",
+    "stripe_client_secret": "pi_3SOMF4EFDrXcJGWZ1...",
+    "total_amount": "49.99"
+  }
+}
+```
+
 #### Admin Endpoints
 
 ```http
@@ -214,6 +259,22 @@ POST   /api/admin/products       # Create product
 PUT    /api/admin/products/{id}  # Update product
 DELETE /api/admin/products/{id}  # Delete product
 ```
+
+#### Stripe Webhooks
+
+```http
+POST   /api/stripe/webhook       # Stripe webhook endpoint (no auth required)
+```
+
+**Handled Webhook Events:**
+- `payment_intent.succeeded` - Updates order to paid status
+- `payment_intent.payment_failed` - Updates order to failed status  
+- `payment_intent.requires_action` - Updates order to requires_action status
+
+**Webhook Configuration:**
+1. Set up webhook endpoint in Stripe Dashboard: `https://your-domain.com/api/stripe/webhook`
+2. Select events: `payment_intent.succeeded`, `payment_intent.payment_failed`, `payment_intent.requires_action`
+3. Copy webhook secret to `STRIPE_WEBHOOK_SECRET` in `.env`
 
 ## 🔄 Real-Time Features
 
@@ -347,6 +408,80 @@ REDIS_PASSWORD=null
 REDIS_PORT=6379
 ```
 
+## 💳 Stripe Integration Guide
+
+### Frontend Integration with Stripe.js
+
+When creating an order with `payment_method: "stripe"`, you'll receive a `stripe_client_secret`. Use this with Stripe.js to complete the payment:
+
+#### 1. Install Stripe.js
+
+```html
+<script src="https://js.stripe.com/v3/"></script>
+```
+
+#### 2. Create Payment Form
+
+```javascript
+const stripe = Stripe('pk_test_your_stripe_publishable_key');
+const elements = stripe.elements();
+const cardElement = elements.create('card');
+cardElement.mount('#card-element');
+
+// When order is created with payment_method: "stripe"
+async function handlePayment(clientSecret) {
+    const {error, paymentIntent} = await stripe.confirmCardPayment(clientSecret, {
+        payment_method: {
+            card: cardElement,
+            billing_details: {
+                name: 'Customer Name',
+                email: 'customer@example.com',
+            },
+        }
+    });
+
+    if (error) {
+        console.error('Payment failed:', error);
+        // Handle payment error
+    } else if (paymentIntent.status === 'succeeded') {
+        console.log('Payment succeeded!');
+        // Redirect to success page
+        // The webhook will automatically update the order status
+    }
+}
+```
+
+#### 3. Order Flow
+
+1. **Create Order**: POST to `/api/client/orders` with `payment_method: "stripe"`
+2. **Get Client Secret**: Extract `stripe_client_secret` from response
+3. **Process Payment**: Use Stripe.js with the client secret
+4. **Webhook Updates**: Order status automatically updated via webhooks
+5. **Success Handling**: Redirect user to confirmation page
+
+### Payment Status Flow
+
+```
+Order Created (payment_status: "unpaid")
+        ↓
+Customer Pays (Stripe.js)
+        ↓
+Webhook Received (payment_intent.succeeded)
+        ↓
+Order Updated (payment_status: "paid", status: "processing")
+        ↓
+Order Fulfillment
+```
+
+### Testing with Stripe Test Cards
+
+```javascript
+// Test card numbers for different scenarios:
+'4242424242424242' // Visa - Succeeds
+'4000000000000002' // Visa - Declined  
+'4000000000003220' // Visa - 3D Secure required
+```
+
 ## 📊 Performance Features
 
 -   **Redis Caching:** Fast data retrieval and session management
@@ -354,6 +489,7 @@ REDIS_PORT=6379
 -   **Eager Loading:** Prevent N+1 query problems
 -   **API Rate Limiting:** Prevent abuse and ensure stability
 -   **WebSocket Efficiency:** Real-time updates without polling
+-   **Stripe Optimization:** Efficient payment processing with Laravel Cashier
 
 ## 🔒 Security Features
 
@@ -364,6 +500,8 @@ REDIS_PORT=6379
 -   **Secure Authentication:** Sanctum token-based auth
 -   **Password Hashing:** Bcrypt encryption
 -   **CSRF Protection:** Form request security
+-   **Stripe Security:** PCI-compliant payment processing with webhook signature verification
+-   **Payment Data Protection:** Sensitive payment data never stored on server
 
 ## 📈 Monitoring & Logging
 
